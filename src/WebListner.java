@@ -1,4 +1,9 @@
 import static spark.Spark.*;
+
+import java.util.ArrayList;
+
+import com.google.gson.Gson;
+
 import spark.*;
 
 public class WebListner {
@@ -21,7 +26,16 @@ public class WebListner {
 	                String companyName = request.queryParams("compnayInput");
 	                String locationName = request.queryParams("locationInput");
 	                
-	                return personName + " " + companyName + " " + locationName;
+	                TextAnalyzer ta = new TextAnalyzer();
+	                
+	                ArrayList<Text> relevantTexts = ta.getRelevantTexts(personName, locationName);
+	                
+	                System.out.println("Searching for person: " + personName + " location: " +locationName);
+	                
+	                Gson gson = new Gson();
+	                String json = gson.toJson(relevantTexts);
+	                	                
+	                return json;
 	            }			 
 		 });
 		

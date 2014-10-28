@@ -35,20 +35,34 @@
 				        url : formURL,
 				        type: "POST",
 				        data : postData,
+				        dataType: "json",
 				        success:function(data, textStatus, jqXHR)
-				        {
+				        {				        	
 				            //data: return data from server
-				            alert(data);
+				            for(var i = 0; i < data.length; i++)
+				            {
+				            	var textPath = data[i].path;
+				            	var textText = data[i].text;
+				            	var analyzed = data[i].analyzed;
+				            	var personNames = data[i].names;
+				            	
+				            	var tableRow = "<tr><td>" + textPath + "</td>";
+				            	tableRow += "<td>" + "Person hits" + "</td>";
+				            	tableRow += "<td>" + "Location hits" + "</td>";
+				            	tableRow += "<td>" + "Company hits" + "</td>";
+				            	tableRow += "<td style='display:none;'>" + textText + "</td></tr>";
+
+				            	$('#resultsTable > tbody:last').append(tableRow);
+				            }
 				        },
 				        error: function(jqXHR, textStatus, errorThrown)
 				        {
 				            //if fails     
 				            alert("Failed, please come back later and try again.");
-				        },
-				        dataType: "text"
+				        }
 				    });
 				    e.preventDefault(); //STOP default action
-				    e.unbind(); //unbind. to stop multiple form submit.
+				    //e.unbind(); //unbind. to stop multiple form submit.
 				});
 			});
 			
@@ -82,13 +96,14 @@
 		</form>
 		
 		<h1>Results table:</h1>
-		<table class="table table-hover">
+		<table id="resultsTable" class="table table-hover">
 			<thead>
 				<tr>
 					<td>Article Name</td>
 					<td>Person hits</td>
 					<td>Location hits</td>
 					<td>Company hits</td>
+					<td style="display:none;">Text</td>
 				</tr>
 			</thead>
 			<tbody></tbody>

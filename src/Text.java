@@ -19,7 +19,7 @@ public class Text {
 
 	String path;
 	String text;
-	Boolean amalyzed = false;
+	Boolean analyzed = false;
 	ArrayList<Name> names;
 	ArrayList<Name> locations;
 	
@@ -124,7 +124,7 @@ public class Text {
 		return names;
 	}
 	
-	public ArrayList getlocation(){
+	public ArrayList<Name> getLocations(){
 		return locations;
 	}
 	
