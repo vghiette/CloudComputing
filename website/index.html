@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	    <meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <title>Article Searcher</title>
+		
+		<!-- Minfied jquery from google -->
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		
+		<!-- Bootstrap -->
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+		
+	    <script>
+			//Put the javascript here
+	
+			$( document ).ready(function() {
+			
+				//callback handler for form submit
+				$("#searchForm").submit(function(e)
+				{
+					var postData = $(this).serializeArray();
+				    var formURL = "http://localhost:4567/search";
+				    
+					// Check that at least one of the form fields is filled in
+					if(postData[1].value == "" && postData[0].value == "" && postData[2].value == "")
+					{
+						alert("Please enter at least on search term");
+						return;
+					}
+					
+				    $.ajax(
+				    {
+				        url : formURL,
+				        type: "POST",
+				        data : postData,
+				        success:function(data, textStatus, jqXHR)
+				        {
+				            //data: return data from server
+				            alert(data);
+				        },
+				        error: function(jqXHR, textStatus, errorThrown)
+				        {
+				            //if fails     
+				            alert("Failed, please come back later and try again.");
+				        },
+				        dataType: "text"
+				    });
+				    e.preventDefault(); //STOP default action
+				    e.unbind(); //unbind. to stop multiple form submit.
+				});
+			});
+			
+		</script>
+	</head>
+  
+  <body>    
+  	<div class="container">
+  		<div class="jumbotron">
+  			<h1>Article searcher</h1>
+  			<p>This website allows you to search through artiles from the CNN news article database.</p>
+  			<p>The application is powered by a cloud so it has infinite possibilities.</p>
+  		</div>
+  		<h1>Search for aticles:</h1>
+  		<form id="searchForm">
+			<div class="form-group">
+				<label for="nameInput">Person name</label>
+				<input type="text" class="form-control" id="nameInput" name="nameInput" placeholder="Enter person name">
+			</div>
+			<div class="form-group">
+				<label for="locationInput">Location name</label>
+				<input type="text" class="form-control" id="locationInput" name="locationInput" placeholder="Enter location name">
+			</div>
+			<div class="form-group">
+				<label for="companyInput">Company name</label>
+				<input type="text" class="form-control" id="companyInput" name="compnayInput" placeholder="Enter person name">
+			</div>
+			<div class="form-group">
+				<button type="submit" class="btn btn-default">Search!</button>
+			</div>
+		</form>
+		
+		<h1>Results table:</h1>
+		<table class="table table-hover">
+			<thead>
+				<tr>
+					<td>Article Name</td>
+					<td>Person hits</td>
+					<td>Location hits</td>
+					<td>Company hits</td>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>  	
+  	</div>
+  </body>
+</html>
