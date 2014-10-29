@@ -23,14 +23,17 @@ public class WebListner {
 			 @Override
 			 public Object handle(Request request, Response response) {
 	                String personName = request.queryParams("nameInput");
-	                String companyName = request.queryParams("compnayInput");
 	                String locationName = request.queryParams("locationInput");
+	                String organisationName = request.queryParams("organisationInput");
+	                
 	                
 	                TextAnalyzer ta = new TextAnalyzer();
 	                
-	                ArrayList<Text> relevantTexts = ta.getRelevantTexts(personName, locationName);
+	                System.out.println("Searching for person: " + personName + " location: " +locationName + " organisation: " + organisationName);
 	                
-	                System.out.println("Searching for person: " + personName + " location: " +locationName);
+	                ArrayList<Text> relevantTexts = ta.getRelevantTexts(personName, locationName, organisationName);
+	                
+	                System.out.println("Searching for person: " + personName + " location: " +locationName + " organisation: " + organisationName);
 	                
 	                Gson gson = new Gson();
 	                String json = gson.toJson(relevantTexts);

@@ -8,63 +8,170 @@
 		
 		<!-- Minfied jquery from google -->
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+		<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
 		
 		<!-- Bootstrap -->
 		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 		
-	    <script>
+	    <script type="text/javascript">
 			//Put the javascript here
 	
-			$( document ).ready(function() {
+			$(document).ready(loadFunctions);
 			
-				//callback handler for form submit
-				$("#searchForm").submit(function(e)
+			function loadFunctions()
+			{
+				// callback handler for form submit
+				$("#searchForm").submit(submitForm);
+			}
+			
+			function submitForm(e)
+			{
+				e.preventDefault(); //STOP default action
+			    //e.unbind(); //unbind. to stop multiple form submit.
+				
+				var postData = $(this).serializeArray();
+			    var formURL = "http://localhost:4567/search";
+			    
+				// Check that at least one of the form fields is filled in
+				if(postData[1].value == "" && postData[0].value == "" && postData[2].value == "")
 				{
-					var postData = $(this).serializeArray();
-				    var formURL = "http://localhost:4567/search";
-				    
-					// Check that at least one of the form fields is filled in
-					if(postData[1].value == "" && postData[0].value == "" && postData[2].value == "")
-					{
-						alert("Please enter at least on search term");
-						return;
-					}
-					
-				    $.ajax(
-				    {
-				        url : formURL,
-				        type: "POST",
-				        data : postData,
-				        dataType: "json",
-				        success:function(data, textStatus, jqXHR)
-				        {				        	
-				            //data: return data from server
-				            for(var i = 0; i < data.length; i++)
-				            {
-				            	var textPath = data[i].path;
-				            	var textText = data[i].text;
-				            	var analyzed = data[i].analyzed;
-				            	var personNames = data[i].names;
-				            	
-				            	var tableRow = "<tr><td>" + textPath + "</td>";
-				            	tableRow += "<td>" + "Person hits" + "</td>";
-				            	tableRow += "<td>" + "Location hits" + "</td>";
-				            	tableRow += "<td>" + "Company hits" + "</td>";
-				            	tableRow += "<td style='display:none;'>" + textText + "</td></tr>";
+					// Clear previous results
+			        clearResultsTable();
+			        //Alert the user on his mistake
+					changeAlert("No search terms", "Please enter at least on search term.", "warning");
+					return;
+				}
+				
+			    $.ajax(
+			    {
+			        url : formURL,
+			        type: "POST",
+			        data : postData,
+			        dataType: "json",
+			        success:function(data, textStatus, jqXHR)
+			        {			
+			        	// Clear previous results
+			        	clearResultsTable();
+			        		        	
+			            // Loop through responces and fill the table
+			            for(var i = 0; i < data.length; i++)
+			            {
+			            	var textPath = data[i].path;
+			            	var textText = data[i].text;
+			            	var textTitle = data[i].title;
+			            	var analyzed = data[i].analyzed;
+			            	var personNames = data[i].names;
+			            	var locationNames = data[i].locations;
+			           		var organisationNames = data[i].organisations;
+			            	
+			            	addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames);
+			            }
+			            
+			            $('#resultsTable > tbody:last tr').click(showArticle);
+			            
+			            // Alert the user the search result is in
+			            changeAlert("Search completed!", "The search results are shown in the table.", "success")
+			        },
+			        error: function(jqXHR, textStatus, errorThrown)
+			        {
+			            //if fails     
+			            changeAlert("Error!", "Something whent wrong try again later.", "error");
+			        }
+			    });
+			}
+			
+			function addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames)
+			{
+				// Add the text Path to the table
+            	var tableRow = "<tr><td class='textTitle'>" + textTitle + "</td>";
+            	
+            	// Add the number of person occurences to the table
+            	tableRow += "<td>";
+            	if(typeof personNames !== 'undefined')
+            	{
+	            	for(var j = 0; j < personNames.length; j++)
+	            	{
+	            		tableRow += "<div><span class='name'>" + toTitleCase(personNames[j].name) + "</span><span class='occurrences' style='margin-left:10px;'>" + personNames[j].occurrences + "</span></div>";
+	            	}
+            	}
+            	tableRow += "</td>";
+            	
+            	// Add Locations
+            	tableRow += "<td>";
+            	if(typeof locationNames !== 'undefined')
+            	{
+	            	for(var j = 0; j < locationNames.length; j++)
+	            	{
+	            		tableRow += "<div><span class='name'>" + toTitleCase(locationNames[j].name) + "</span><span class='occurrences' style='margin-left:10px;'>" + locationNames[j].occurrences + "</span></div>";
+	            	}
+            	}
+            	tableRow += "</td>";
+            	
+            	// Add companies
+            	tableRow += "<td>";
+            	if(typeof organisationNames !== 'undefined')
+            	{
+	            	for(var j = 0; j < organisationNames.length; j++)
+	            	{
+	            		tableRow += "<div><span class='name'>" + toTitleCase(organisationNames[j].name) + "</span><span class='occurrences' style='margin-left:10px;'>" + organisationNames[j].occurrences + "</span></div>";
+	            	}
+            	}
+            	tableRow += "</td>";
+            	
+            	// Add hidden text fo the article
+            	tableRow += "<td class='hiddenText' style='display:none;'>" + textText + "</td></tr>";
 
-				            	$('#resultsTable > tbody:last').append(tableRow);
-				            }
-				        },
-				        error: function(jqXHR, textStatus, errorThrown)
-				        {
-				            //if fails     
-				            alert("Failed, please come back later and try again.");
-				        }
-				    });
-				    e.preventDefault(); //STOP default action
-				    //e.unbind(); //unbind. to stop multiple form submit.
-				});
-			});
+            	$('#resultsTable > tbody:last').append(tableRow);
+			}
+			
+			function toTitleCase(str)
+			{
+			    return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+			}
+			
+			function clearResultsTable()
+			{
+				var test = $('#resultsTable tbody');
+				test[0].innerHTML = "";
+			}
+			
+			function changeAlert(strong, text, type)
+			{
+				if(type == "error")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-danger");
+				}
+				else if(type == "warning")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-warning");
+				}
+				else if(type == "success")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-success");
+				}
+				else if(type == "info")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-info");
+				}
+				
+				
+				$("#alert").html("<strong>" + strong +"</strong> " + text);
+				$("#alert").effect( "bounce", "slow" );
+			}
+			
+			function showArticle(){
+				var text = $('.hiddenText', $(this)).html();
+				var title = $('.textTitle', $(this)).html();
+				var dia = $(document.createElement("div"));
+				dia.html(text);
+				dia.attr("title", title)
+				dia.dialog();
+			}
 			
 		</script>
 	</head>
@@ -88,12 +195,17 @@
 			</div>
 			<div class="form-group">
 				<label for="companyInput">Company name</label>
-				<input type="text" class="form-control" id="companyInput" name="compnayInput" placeholder="Enter person name">
+				<input type="text" class="form-control" id="organisationInput" name="organisationInput" placeholder="Enter organisation name">
 			</div>
 			<div class="form-group">
 				<button type="submit" class="btn btn-default">Search!</button>
 			</div>
 		</form>
+		
+		<div id="alert" class="alert alert-info">
+			<strong>Please enter a search query!</strong>
+			To do so, type in the search terms and click on the Search button.
+		</div>
 		
 		<h1>Results table:</h1>
 		<table id="resultsTable" class="table table-hover">

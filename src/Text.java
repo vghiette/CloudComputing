@@ -19,20 +19,34 @@ public class Text {
 
 	String path;
 	String text;
+	String title;
 	Boolean analyzed = false;
 	ArrayList<Name> names;
 	ArrayList<Name> locations;
+	ArrayList<Name> organisations;
 	
 	public Text(String path) {
 		this.path = path;
 		
 		try {
-			this.text = readFile(path, StandardCharsets.UTF_8);
+			this.text = readFile(path, StandardCharsets.UTF_8);		
+			generateTitle(text);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		
+	}
+	
+	private void generateTitle(String text){
+		String[] splitted = text.split("-");
+		if(splitted.length > 1){
+			title = splitted[0];
+		}
+		else
+		{
+			title = text.substring(0, 30);
+		}
 	}
 	
 	public void analyze(){
@@ -42,6 +56,7 @@ public class Text {
 			tokens = tokenize(text);
 			names = findNames(tokens);
 			locations = findLocations(tokens);
+			organisations = findOrganisations(tokens);
 		} catch (InvalidFormatException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -59,6 +74,7 @@ public class Text {
 			  return new String(encoded, encoding);
 			}
 	
+	// Find names in the tokens
 	private ArrayList<Name> findNames(String[] tokens) throws IOException {
 		InputStream is = new FileInputStream("models/en-ner-person.bin");
 	 
@@ -89,45 +105,38 @@ public class Text {
 		return names;
 	}
 	
-	// Add a name entry to the corresponding arraylist
-	private void addName(String name, ArrayList<Name> list){
-		name = name.trim();
-		name = name.toLowerCase();
+	// Find organisations in the tokens
+	private ArrayList<Name> findOrganisations(String[] tokens) throws IOException {
+		InputStream is = new FileInputStream("models/en-ner-organization.bin");
+	 
+		TokenNameFinderModel model = new TokenNameFinderModel(is);
+		is.close();
+	 
+		NameFinderME organisationFinder = new NameFinderME(model);
+	 
+		Span organisationSpans[] = organisationFinder.find(tokens);
 		
-		//Check if name is already in the names list
-		int index = findName(name, list);
-		if (index > -1){
-			list.get(index).addOccurence();
+		if(organisationSpans.length == 0){
+			return null;
 		}
-		else {
-			Name tempName = new Name(name);
-			tempName.addOccurence();
-			list.add(tempName);
-		}
-	}
-	
-	// Returns the index of the Name corresponding to the given string, if not in array then return -1
-	private int findName(String name, ArrayList<Name> list){
-		int index = -1;
 		
-		for(int i = 0; i < list.size(); i++){
-			if(list.get(i).getName().equals(name)){
-				index = i;
+		organisations = new ArrayList<Name>();
+		
+		for(int i = 0; i < organisationSpans.length; i++)
+		{
+			String tempName = "";
+			
+			for(int j = organisationSpans[i].getStart(); j< organisationSpans[i].getEnd(); j++){
+				tempName +=  tokens[j] + " ";
 			}
+			
+			addName(tempName, organisations);
 		}
 		
-		return index;
-		
+		return organisations;
 	}
 	
-	public ArrayList<Name> getNames(){
-		return names;
-	}
-	
-	public ArrayList<Name> getLocations(){
-		return locations;
-	}
-	
+	// Find locations in the tokens
 	private ArrayList<Name> findLocations(String[] tokens) throws IOException {
 		InputStream is = new FileInputStream("models/en-ner-location.bin");
 	 
@@ -158,7 +167,58 @@ public class Text {
 		return locations;
 						
 	}
+
+	// Add a name entry to the corresponding arrayList
+	private void addName(String name, ArrayList<Name> list){
+		name = name.trim();
+		name = name.toLowerCase();
+		
+		//Check if name is already in the names list
+		int index = findName(name, list);
+		if (index > -1){
+			list.get(index).addOccurence();
+		}
+		else {
+			Name tempName = new Name(name);
+			tempName.addOccurence();
+			list.add(tempName);
+		}
+	}
 	
+	// Returns the index of the Name corresponding to the given string, if not in array then return -1
+	private int findName(String name, ArrayList<Name> list){
+		int index = -1;
+		
+		for(int i = 0; i < list.size(); i++){
+			if(list.get(i).getName().equals(name)){
+				index = i;
+			}
+		}
+		
+		return index;
+		
+	}
+	
+	// Returns the personNames
+	public ArrayList<Name> getNames(){
+		return names;
+	}
+	
+	// Returns the location names
+	public ArrayList<Name> getLocations(){
+		return locations;
+	}
+
+	// Return the organisation names
+	public ArrayList<Name> getOrganisations(){
+		return organisations;
+	}
+	
+	public String getTitle(){
+		return title;
+	}
+	
+	// Tokenizes the string
 	private String[] tokenize(String text) throws InvalidFormatException, IOException {
 		InputStream is = new FileInputStream("models/en-token.bin");
 	 

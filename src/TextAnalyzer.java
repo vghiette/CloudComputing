@@ -9,14 +9,15 @@ import java.util.HashSet;
 
 public class TextAnalyzer {
 	
-	static int maxTexts = 5;
+	static int maxTexts = 3;
 	
 	public TextAnalyzer()
 	{
 		// Maybe do something
 	}
 	
-	public ArrayList<Text> getRelevantTexts(String personName, String locationName)
+	// GEt the relevant texts, this method is to be called
+	public ArrayList<Text> getRelevantTexts(String personName, String locationName, String organisationName)
 	{
 		// Get the files from the directory
 		File files[] = finder("testTexts");
@@ -27,13 +28,18 @@ public class TextAnalyzer {
 		// Filter the texts
 		ArrayList<Text> filteredTexts = new ArrayList<Text>();
 		
+		//This is and or Filter
 		if(!personName.isEmpty())
 		{
 			filteredTexts.addAll(filterPerson(texts, personName));
 		}
 		if(!locationName.isEmpty())
 		{
-			filteredTexts.addAll(filterLocation(filteredTexts, locationName));
+			filteredTexts.addAll(filterLocation(texts, locationName));
+		}
+		if(!organisationName.isEmpty())
+		{
+			filteredTexts.addAll(filterOrganisation(texts, organisationName));
 		}
 		
 		ArrayList<Text> deduplicatedTexts = new ArrayList<Text>();
@@ -47,6 +53,7 @@ public class TextAnalyzer {
 		return deduplicatedTexts;
 	}
 	
+	// Dies the text analysis
 	private ArrayList<Text> analyseTexts(File[] files)
 	{
 		ArrayList<Text> texts = new ArrayList<Text>();
@@ -62,6 +69,7 @@ public class TextAnalyzer {
 		return texts;
 	}
 	
+	// Filter the names on the person names
 	private ArrayList<Text> filterPerson(ArrayList<Text> texts, String personName)
 	{
 		ArrayList<Text> filteredTexts = new ArrayList<Text>();
@@ -69,7 +77,7 @@ public class TextAnalyzer {
 		for(int i = 0; i < texts.size(); i++)
 		{
 			// the text contains names
-			if(texts.get(i).getNames().size() > 0)
+			if(texts.get(i).getNames() != null && texts.get(i).getNames().size() > 0)
 			{
 				for(int j = 0; j < texts.get(i).getNames().size(); j++)
 				{
@@ -84,6 +92,7 @@ public class TextAnalyzer {
 		return filteredTexts;
 	}
 	
+	// Filter the names on the location
 	private ArrayList<Text> filterLocation(ArrayList<Text> texts, String locationName)
 	{
 		ArrayList<Text> filteredTexts = new ArrayList<Text>();
@@ -91,7 +100,7 @@ public class TextAnalyzer {
 		for(int i = 0; i < texts.size(); i++)
 		{
 			// the text contains names
-			if(texts.get(i).getLocations().size() > 0)
+			if(texts.get(i).getLocations() != null && texts.get(i).getLocations().size() > 0)
 			{
 				for(int j = 0; j < texts.get(i).getLocations().size(); j++)
 				{
@@ -106,6 +115,30 @@ public class TextAnalyzer {
 		return filteredTexts;
 	}
 	
+	// Filter the names on organisation
+	private ArrayList<Text> filterOrganisation(ArrayList<Text> texts, String organisationName)
+	{
+		ArrayList<Text> filteredTexts = new ArrayList<Text>();
+		
+		for(int i = 0; i < texts.size(); i++)
+		{
+			// the text contains names
+			if(texts.get(i).getOrganisations() != null && texts.get(i).getOrganisations().size() > 0)
+			{
+				for(int j = 0; j < texts.get(i).getOrganisations().size(); j++)
+				{
+					if( texts.get(i).getOrganisations().get(j).getName().contains(organisationName))
+					{
+						filteredTexts.add(texts.get(i));
+					}
+				}
+			}
+		}
+		
+		return filteredTexts;
+	}
+	
+	// Removes duplicates from name ArrayLists
 	private ArrayList<Text> removeDuplicates(ArrayList<Text> texts)
 	{
 		ArrayList<Text> deduplicatedtexts = new ArrayList<Text>();
@@ -117,6 +150,7 @@ public class TextAnalyzer {
 		return deduplicatedtexts;
 	}
 	
+	// Get the files to be analyzed
 	private File[] finder( String dirName)
 	{
 		File dir = new File(dirName);
