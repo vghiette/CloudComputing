@@ -58,14 +58,15 @@
 			            for(var i = 0; i < data.length; i++)
 			            {
 			            	var textPath = data[i].path;
-			            	var textText = data[i].text;
+			            	var textText = data[i].text.replace(/\n/g, "<br />");
 			            	var textTitle = data[i].title;
 			            	var analyzed = data[i].analyzed;
 			            	var personNames = data[i].names;
 			            	var locationNames = data[i].locations;
 			           		var organisationNames = data[i].organisations;
+			           		var totalOccurrences = data[i].totalOccurrences;
 			            	
-			            	addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames);
+			            	addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames, totalOccurrences);
 			            }
 			            
 			            $('#resultsTable > tbody:last tr').click(showArticle);
@@ -81,7 +82,7 @@
 			    });
 			}
 			
-			function addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames)
+			function addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames, totalOccurrences)
 			{
 				// Add the text Path to the table
             	var tableRow = "<tr><td class='textTitle'>" + textTitle + "</td>";
@@ -118,6 +119,9 @@
 	            	}
             	}
             	tableRow += "</td>";
+            	
+            	//Add the total number of real matches
+            	tableRow += "<td>" + totalOccurrences + "</td>";
             	
             	// Add hidden text fo the article
             	tableRow += "<td class='hiddenText' style='display:none;'>" + textText + "</td></tr>";
@@ -169,8 +173,8 @@
 				var title = $('.textTitle', $(this)).html();
 				var dia = $(document.createElement("div"));
 				dia.html(text);
-				dia.attr("title", title)
-				dia.dialog();
+				dia.attr("title", title);
+				dia.dialog({height:600, width: 900});
 			}
 			
 		</script>
@@ -214,7 +218,8 @@
 					<td>Article Name</td>
 					<td>Person hits</td>
 					<td>Location hits</td>
-					<td>Company hits</td>
+					<td>Organisation hits</td>
+					<td>Total relevant Hits</td>
 					<td style="display:none;">Text</td>
 				</tr>
 			</thead>

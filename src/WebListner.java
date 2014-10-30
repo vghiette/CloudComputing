@@ -7,8 +7,8 @@ import com.google.gson.Gson;
 import spark.*;
 
 public class WebListner {
-	public static void main(String[] args)
-	{
+	
+	public WebListner (){
 		setPort(4567);
 		enableCORS("*", "*", "*");
 		
@@ -41,11 +41,10 @@ public class WebListner {
 	                return json;
 	            }			 
 		 });
-		
 	}
 	
 	// Enable cross origin reference
-	private static void enableCORS(final String origin, final String methods, final String headers) {
+	private void enableCORS(final String origin, final String methods, final String headers) {
 	    before(new Filter() {
 	        @Override
 	        public void handle(Request request, Response response) {

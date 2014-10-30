@@ -1,6 +1,8 @@
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 
 // Used to scan through the directories
@@ -50,7 +52,15 @@ public class TextAnalyzer {
 			deduplicatedTexts.addAll(removeDuplicates(filteredTexts));
 		}
 		
-		return deduplicatedTexts;
+		for(Text t: deduplicatedTexts)
+		{
+			
+			t.calculateTotalOccurrences(personName, locationName, organisationName);
+		}
+		
+		ArrayList<Text> sortedtexts = sortTexts(deduplicatedTexts);
+		
+		return sortedtexts;
 	}
 	
 	// Dies the text analysis
@@ -67,6 +77,56 @@ public class TextAnalyzer {
 		}
 		
 		return texts;
+	}
+	
+	// Sort the texts on the most relevant
+	private ArrayList<Text> sortTexts(ArrayList<Text> texts){		
+		
+		//Sort the texts amoungst them
+		Collections.sort(texts, new Comparator<Text>(){
+		    public int compare(Text t1, Text t2) {
+		        return t2.getTotalOccurences() - t1.getTotalOccurences();
+		    }
+		});
+		
+		//Sort the Names arrays in the texts according to their occurrences
+		for(Text t: texts)
+		{
+			// Sort the person names
+			if(t.getNames() != null)
+			{
+				Collections.sort(t.getNames(), new Comparator<Name>(){
+				    public int compare(Name n1, Name n2) {
+				        return n2.getOccurences() - n1.getOccurences();
+				    }
+				});
+			}
+			
+			// Sort the location names
+			if(t.getLocations() != null)
+			{
+				Collections.sort(t.getLocations(), new Comparator<Name>(){
+				    public int compare(Name l1, Name l2) {
+				        return l2.getOccurences() - l1.getOccurences();
+				    }
+				});
+			}
+			
+			
+			// Sort the organisation names
+			if(t.getOrganisations() != null)
+			{
+				Collections.sort(t.getOrganisations(), new Comparator<Name>(){
+				    public int compare(Name o1, Name o2) {
+				        return o2.getOccurences() - o1.getOccurences();
+				    }
+				});
+			}
+			
+		}
+		
+		return texts;
+		
 	}
 	
 	// Filter the names on the person names

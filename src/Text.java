@@ -17,6 +17,7 @@ import opennlp.tools.util.Span;
 
 public class Text {
 
+	int totalOccurrences;
 	String path;
 	String text;
 	String title;
@@ -199,6 +200,34 @@ public class Text {
 		
 	}
 	
+	public void calculateTotalOccurrences(String personName, String locationName, String organisationName)
+	{
+		int occurrences = 0;
+  
+    	// Only count the occurrences which have been searched for 
+    	if(personName != null && !personName.isEmpty())
+    	{
+    		occurrences += getTotalMatchingOccurences(names, personName);
+    	}
+    	
+    	if(locationName != null && !locationName.isEmpty())
+    	{
+    		occurrences += getTotalMatchingOccurences(locations, locationName);
+    	}
+    	
+    	if(organisationName != null && !organisationName.isEmpty())
+    	{
+    		occurrences += getTotalMatchingOccurences(organisations, organisationName);
+    	}
+    	
+    	totalOccurrences = occurrences;
+	}
+	
+	public int getTotalOccurences()
+	{
+		return totalOccurrences;
+	}
+	
 	// Returns the personNames
 	public ArrayList<Name> getNames(){
 		return names;
@@ -216,6 +245,22 @@ public class Text {
 	
 	public String getTitle(){
 		return title;
+	}
+	
+	public int getTotalMatchingOccurences(ArrayList<Name> listName, String strName)
+	{
+		int oc = 0;
+		if(listName != null)
+		{
+			for(Name n: listName){
+				if(n.getName().contains(strName))
+				{
+					oc += n.getOccurences();
+				}
+			}
+		}
+		
+		return oc;
 	}
 	
 	// Tokenizes the string
