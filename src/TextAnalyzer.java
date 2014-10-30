@@ -11,7 +11,7 @@ import java.util.HashSet;
 
 public class TextAnalyzer {
 	
-	static int maxTexts = 3;
+	static int maxTexts = 50;
 	
 	public TextAnalyzer()
 	{
