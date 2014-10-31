@@ -12,18 +12,17 @@ import java.util.HashSet;
 public class TextAnalyzer {
 	
 	static int maxTexts = 50;
+	ArrayList<String> files;
 	
-	public TextAnalyzer()
+	public TextAnalyzer(ArrayList<String> f)
 	{
+		files = f;
 		// Maybe do something
 	}
 	
 	// GEt the relevant texts, this method is to be called
 	public ArrayList<Text> getRelevantTexts(String personName, String locationName, String organisationName)
-	{
-		// Get the files from the directory
-		File files[] = finder("testTexts");
-		
+	{	
 		// Analyze all the texts
 		ArrayList<Text> texts = analyseTexts(files);
 		
@@ -64,12 +63,12 @@ public class TextAnalyzer {
 	}
 	
 	// Dies the text analysis
-	private ArrayList<Text> analyseTexts(File[] files)
+	private ArrayList<Text> analyseTexts(ArrayList<String> f)
 	{
 		ArrayList<Text> texts = new ArrayList<Text>();
 		
-		for(int i = 0; i < maxTexts; i++){
-			Text t = new Text(files[i].toString());
+		for(int i = 0; i < f.size(); i++){
+			Text t = new Text(f.get(i));
 			
 			t.analyze();
 			

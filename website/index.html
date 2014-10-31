@@ -33,6 +33,16 @@
 				var postData = $(this).serializeArray();
 			    var formURL = "http://localhost:4567/search";
 			    
+			    // Chek that the numbr of docs per slave is defined
+			    if(postData[3].value == "")
+			    {
+			    	// Clear previous results
+			        clearResultsTable();
+			        //Alert the user on his mistake
+					changeAlert("No slave number", "Please enter the number of documents each slave needs to process.", "warning");
+					return;
+			    }			    
+			    	
 				// Check that at least one of the form fields is filled in
 				if(postData[1].value == "" && postData[0].value == "" && postData[2].value == "")
 				{
@@ -42,7 +52,7 @@
 					changeAlert("No search terms", "Please enter at least on search term.", "warning");
 					return;
 				}
-				
+			
 			    $.ajax(
 			    {
 			        url : formURL,
@@ -200,6 +210,10 @@
 			<div class="form-group">
 				<label for="companyInput">Company name</label>
 				<input type="text" class="form-control" id="organisationInput" name="organisationInput" placeholder="Enter organisation name">
+			</div>
+			<div class="form-group">
+				<label for="slaveInput">Number of documents per slave</label>
+				<input type="text" class="form-control" id="slaveInput" name="slaveInput" placeholder="Enter a number">
 			</div>
 			<div class="form-group">
 				<button type="submit" class="btn btn-default">Search!</button>
