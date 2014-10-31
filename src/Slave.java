@@ -40,15 +40,9 @@ public class Slave {
 		
 		setPort(4567);
 		enableCORS("*", "*", "*");
+
 		
-//			 get(new Route("/hello") {
-//				 @Override
-//				 public Object handle(Request request, Response response) {
-//				 	return "<html><body>lool</body></html>";
-//				 }
-//			 });
-		
-		 post(new Route("/search") 
+		 post(new Route("/") 
 		 {
 			 @Override
 			 public Object handle(Request request, Response response) 

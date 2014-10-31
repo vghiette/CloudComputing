@@ -32,7 +32,8 @@ public class Master {
 	// Log in credential for amazone
 	String accessKey = "insert your access key here!";
 	String secretKey = "insert your secret key here!";
-	String s3IP = "insert ip here";
+	String s3IP = "Insert the IP here of the Amazone S3 instance which hosts the files";
+	String slaveELBIP = "Insert ip here of the ELB which handles the POST requests";
 	
 	public Master(){
 		
@@ -46,7 +47,7 @@ public class Master {
 //			 }
 //		 });
 		
-		 post(new Route("/search") 
+		 post(new Route("/") 
 		 {
 			 @Override
 			 public Object handle(Request request, Response response) 
@@ -103,7 +104,8 @@ public class Master {
                 // This ceate new threads for all the POST requests and send them
                 for (FileBatch batch: batches) 
                 {
-                	Callable<String> callable =  new PostCallable("url", batch, "parameters");
+                	String parameters = "nameInput=" + personName + "&locationInput=" + locationName + "&organisationInput=" + organisationName + "&files=" + batch.toString();
+                	Callable<String> callable =  new PostCallable(slaveELBIP, parameters);
                 	Future<String> future = pool.submit(callable);
                     set.add(future);
                 }
@@ -123,8 +125,7 @@ public class Master {
 					}
                 }
                 
-                
-                  
+                // Convert the result to json               
                 Gson gson = new Gson();
                 String json = gson.toJson(results);
                 	                
