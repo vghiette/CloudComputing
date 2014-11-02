@@ -18,6 +18,8 @@ public class FileBatch {
 		
 		String[] batchStrings = batchString.split(",");
 		
+		batch = new ArrayList<FileLocation>();
+		
 		for(int i = 0; i < batchStrings.length; i++)
 		{
 			batch.add(new FileLocation(batchStrings[i]));

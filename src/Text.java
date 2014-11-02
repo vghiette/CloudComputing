@@ -26,17 +26,10 @@ public class Text {
 	ArrayList<Name> locations;
 	ArrayList<Name> organisations;
 	
-	public Text(String path) {
-		this.path = path;
+	public Text(String t) {
 		
-		try {
-			this.text = readFile(path, StandardCharsets.UTF_8);		
-			generateTitle(text);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
+		text = t;
+		generateTitle(text);		
 	}
 	
 	private void generateTitle(String text){
@@ -68,12 +61,6 @@ public class Text {
 		
 	}
 	
-	private String readFile(String path, Charset encoding) 
-			  throws IOException 
-			{
-			  byte[] encoded = Files.readAllBytes(Paths.get(path));
-			  return new String(encoded, encoding);
-			}
 	
 	// Find names in the tokens
 	private ArrayList<Name> findNames(String[] tokens) throws IOException {

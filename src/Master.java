@@ -23,17 +23,19 @@ import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.StringUtils;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import spark.*;
 
 public class Master {
 
 	// Log in credential for amazone
-	String accessKey = "insert your access key here!";
-	String secretKey = "insert your secret key here!";
-	String s3IP = "Insert the IP here of the Amazone S3 instance which hosts the files";
-	String slaveELBIP = "Insert ip here of the ELB which handles the POST requests";
+	String accessKey = "AKIAINKV5YEJDW5OIJZQ";
+	String secretKey = "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";
+	String s3IP = "s3.eu-central-1.amazonaws.com";
+	String slaveELBIP = "http://localhost:5678";
 	
 	public Master(){
 		
@@ -98,7 +100,7 @@ public class Master {
                 
                 /**************** send the POST request asychronously to the ELB ************/
                 // For each batch create a new post request and send it to the ELB
-                ExecutorService pool = Executors.newFixedThreadPool((int)Math.ceil(keys.size() / intSlaveNumber));
+                ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, (int)Math.ceil(keys.size() / intSlaveNumber)));
                 Set<Future<String>> set = new HashSet<Future<String>>();
                 
                 // This ceate new threads for all the POST requests and send them
@@ -112,10 +114,15 @@ public class Master {
                 
                 /********************** Get the results from the SLAVES *************/
                 // This gets all the POST request results
-                ArrayList<String> results = new ArrayList<String>();
+                ArrayList<Text> results = new ArrayList<Text>();
+                Gson gson = new Gson();
                 for (Future<String> future : set) {
                 	try {
-						results.add(future.get());
+                		java.lang.reflect.Type listType = new TypeToken<ArrayList<Text>>() {}.getType();
+                		String jsonString = future.get();
+                		ArrayList<Text> temptext = gson.fromJson(jsonString, listType);
+                		
+						results.addAll(temptext);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -126,7 +133,6 @@ public class Master {
                 }
                 
                 // Convert the result to json               
-                Gson gson = new Gson();
                 String json = gson.toJson(results);
                 	                
                 return json;

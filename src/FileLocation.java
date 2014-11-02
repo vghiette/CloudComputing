@@ -12,8 +12,8 @@ public class FileLocation {
 	public FileLocation(String loc)
 	{
 		loc = loc.trim();
-		loc = loc.replaceAll("[", "");
-		loc = loc.replaceAll("]", "");
+		loc = loc.replace("[", "");
+		loc = loc.replace("]", "");
 		
 		String[] strs = loc.split(";"); 
 		

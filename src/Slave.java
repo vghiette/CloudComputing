@@ -32,13 +32,13 @@ import com.google.gson.Gson;
 
 public class Slave {
 	// Log in credential for amazone
-	String accessKey = "insert your access key here!";
-	String secretKey = "insert your secret key here!";
-	String s3IP = "insert ip here";
+	String accessKey = "AKIAINKV5YEJDW5OIJZQ";
+	String secretKey = "l1WBi/UjMPgOO+fBYEARWfnAcJyOMbS3WNhXeTp9";
+	String s3IP = "s3.eu-central-1.amazonaws.com";
 	
 	public Slave(){
 		
-		setPort(4567);
+		setPort(5678);
 		enableCORS("*", "*", "*");
 
 		
