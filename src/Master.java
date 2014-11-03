@@ -42,14 +42,20 @@ public class Master {
 	String secretKey = "";
 	String s3IP = "";
 	String slaveELBIP = "";
-	int masterPort = 4567;
+	int masterPort = 80;
 
 	/**
 	 * Create a new instance of the MAster class. This instance listens to
 	 * incoming POST requests and sends subsets to the Slaves which handle them
 	 * in parallel. The answers are combined and sent back to the client.
 	 */
-	public Master() {
+	public Master(String ak, String sk, String s3, String sip, int p) {
+		// Set the data
+		accessKey = ak;
+		secretKey = sk;
+		s3IP = s3;
+		slaveELBIP = sip;
+		masterPort = p;
 
 		// Set the port to which the master should listen to.
 		setPort(masterPort);

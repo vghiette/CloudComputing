@@ -32,14 +32,19 @@ public class Slave {
 	String accessKey = "";
 	String secretKey = "";
 	String s3IP = "";
-	int slavePort = 5678;
+	int slavePort = 80;
 
 	/**
 	 * Creates a new slave instance which will handle incoming POST requests
 	 * from the Master nodes.
 	 */
-	public Slave() {
-
+	public Slave(String ak, String sk, String s3, int p) {
+		// Set the data
+		accessKey = ak;
+		secretKey = sk;
+		s3IP = s3;
+		slavePort = p;		
+		
 		// Set the port to which the slaves listens to.
 		setPort(slavePort);
 		// tell the slave to listen to cross domain calls.
