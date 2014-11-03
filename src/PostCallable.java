@@ -4,10 +4,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class PostCallable implements Callable<String> {
 	private  String url; 
@@ -36,11 +32,6 @@ public class PostCallable implements Callable<String> {
 		wr.writeBytes(urlParameters);
 		wr.flush();
 		wr.close();
- 
-		int responseCode = con.getResponseCode();
-//		System.out.println("\nSending 'POST' request to URL : " + url);
-//		System.out.println("Post parameters : " + urlParameters);
-//		System.out.println("Response Code : " + responseCode);
 		
 		BufferedReader in = new BufferedReader(
 		        new InputStreamReader(con.getInputStream()));

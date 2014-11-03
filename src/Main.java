@@ -7,11 +7,11 @@ public class Main {
 			
 			if(args[0].equals("master"))
 			{
-				Master m = new Master();
+				new Master();
 			}
 			else if(args[0].equals("slave"))
 			{
-				Slave s = new Slave();
+				new Slave();
 			}
 			else
 			{

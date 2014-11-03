@@ -1,5 +1,3 @@
-import java.io.File;
-import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -207,18 +205,6 @@ public class TextAnalyzer {
 		deduplicatedtexts.addAll(hs);
 		
 		return deduplicatedtexts;
-	}
-	
-	// Get the files to be analyzed
-	private File[] finder( String dirName)
-	{
-		File dir = new File(dirName);
-
-		return dir.listFiles(new FilenameFilter() { 
-		         public boolean accept(File dir, String filename)
-		              { return filename.endsWith(".txt"); }
-		} );
-
 	}
 
 	
