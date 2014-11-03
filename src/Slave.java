@@ -29,9 +29,9 @@ import com.google.gson.Gson;
  */
 public class Slave {
 	// Log in credential for Amazon
-	String accessKey = "AKIAINKV5YEJDW5OIJZQ";
-	String secretKey = "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";
-	String s3IP = "s3.eu-central-1.amazonaws.com";
+	String accessKey = "";
+	String secretKey = "";
+	String s3IP = "";
 	int slavePort = 5678;
 
 	/**

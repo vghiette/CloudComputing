@@ -38,10 +38,10 @@ import spark.*;
 public class Master {
 
 	// Log in credential for Amazon
-	String accessKey = "AKIAINKV5YEJDW5OIJZQ";
-	String secretKey = "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";
-	String s3IP = "s3.eu-central-1.amazonaws.com";
-	String slaveELBIP = "http://localhost:5678";
+	String accessKey = "";
+	String secretKey = "";
+	String s3IP = "";
+	String slaveELBIP = "";
 	int masterPort = 4567;
 
 	/**
