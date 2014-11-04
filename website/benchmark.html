@@ -1,0 +1,213 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Benchmark</title>
+	<meta name="Vincent Ghiette" content="benchmark" />
+	<!-- Date: 2014-11-04 -->
+	
+	<!-- Minfied jquery from google -->
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+	
+	<!-- Bootstrap -->
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	
+	<script type="text/javascript">
+	
+		var reqRemaining = 0;
+	
+		$(document).ready(loadFunctions);
+				
+		function loadFunctions()
+		{
+			// callback handler for form submit
+			$("#searchForm").submit(submitForm);
+		}
+		
+		function submitForm(e)
+		{
+			e.preventDefault(); //STOP default action
+		    //e.unbind(); //unbind. to stop multiple form submit.
+			
+			// Get the values from the form
+			var postData = $(this).serializeArray();
+			
+			// Save the values in manageable variables 
+			var testRuns = postData[0].value;
+			var filesPerSlave = postData[1].value; 
+			
+			// Check if the tester has enterred rquired fileds
+			if(testRuns == "" || filesPerSlave == "")
+			{
+				changeAlert("Insert value!", "Enter all fields in the form", "error");
+				return;
+			}
+			
+			// Check if the tester has entered valid values in the fields
+			if(!($.isNumeric(testRuns) && $.isNumeric(filesPerSlave)))
+			{
+				changeAlert("Insert integer values!", "Enter integer values in all of the fields", "error");
+				return;
+			}
+			
+			// Create false searching query
+			var postData = "nameInput=e&locationInput=a&organisationInput=c&slaveInput=" + filesPerSlave;
+			
+			// Sett he url of the master node
+		    var formURL = "http://localhost:4567/";    
+		    
+		    var departureArray = [];
+		    var arrivalArray = [];
+		    	
+		    reqRemaining = testRuns;
+		    	
+			for(var i = 0; i < testRuns; i++)
+			{
+				//var test = new Date().getTime();
+				//departureArray[i] = new Date().getTime();
+				
+				//makeCall(i, departureArray, arrivalArray, formURL, postData);
+				(function(i){
+					$.ajax(
+			    	{
+			    		beforeSend: function() 
+			    		{
+	            			departureArray[i]  = new Date().getTime();
+	        			},
+				        url : formURL,
+				        type: "POST",
+				        data : postData,
+				        dataType: "json",
+				        success:function(data, textStatus, jqXHR)
+				        {			
+							addResponceTime(i, departureArray, arrivalArray);
+				        },
+				        error: function(jqXHR, textStatus, errorThrown)
+				        {
+				        	addResponceTime(i, departureArray, arrivalArray);
+				        }
+			    	});
+		  		})(i);
+			}
+		}
+
+		function addResponceTime(i, d, a)
+		{			
+			var t = new Date().getTime();
+			
+			// Add the responce time
+			a[i] = t;
+			
+			// Check if all respionces are added
+			reqRemaining = reqRemaining - 1;
+			
+			if(reqRemaining == 0)
+			{
+				handleResults(d, a);
+			}
+			
+		}
+		
+		function handleResults(d, a)
+		{
+			var csvString = '"Request Number","Departure time (ms)", "Arrival Time (ms)", "Request duration (ms)"\n'
+			
+			for(var  i = 0; i < d.length; i++)
+			{
+				var time = a[i] - d[i];
+				csvString += i + "," + d[i] + "," + a[i] + "," + (a[i] - d[i]) + "\n";
+			}
+			
+			offerDownload(csvString);
+		}
+
+		function offerDownload(csv)
+		{
+			var a = document.createElement('a');
+			a.textContent='download';
+			a.download="myFileName.csv";
+			a.href='data:text/csv;charset=utf-8,'+ escape(csv);
+			
+			$("#alert").removeClass();
+			$("#alert").addClass("alert alert-success");
+			
+			$("#alert").html("<strong>Testing Complete!</strong> The test results can be downloaded throught the next link.");
+			$("#alert").effect( "bounce", "slow" );
+			
+			$("#alert").append(a);
+		}
+		
+		function changeAlert(strong, text, type)
+		{
+			if(type == "error")
+			{
+				$("#alert").removeClass();
+				$("#alert").addClass("alert alert-danger");
+			}
+			else if(type == "warning")
+			{
+				$("#alert").removeClass();
+				$("#alert").addClass("alert alert-warning");
+			}
+			else if(type == "success")
+			{
+				$("#alert").removeClass();
+				$("#alert").addClass("alert alert-success");
+			}
+			else if(type == "info")
+			{
+				$("#alert").removeClass();
+				$("#alert").addClass("alert alert-info");
+			}
+			
+			
+			$("#alert").html("<strong>" + strong +"</strong> " + text);
+			$("#alert").effect( "bounce", "slow" );
+		}
+		
+	</script>
+	
+</head>
+<body>
+	<div class="container">
+  		<div class="jumbotron">
+  			<h1>Benchmark for Article searcher</h1>
+  			<p>This website allows you to benchmark the Article searcher. 
+  				It sends the requests and measure the responce time.
+  				The tester may chose the number of files which are processed by the slave.
+  				Also the tester may select the number of serches which are performed.
+  				This will affect the return time and the scaling of the application.
+  				For conveniance, the search terms are static, that is that the benchmarkes searches for the same words every time.
+  				Also the search results are ommited and replaced by the responce time.
+  				Finally the results are presented in a CVS file, which can be used to analyse the data.
+  				CSV has been chosen because it can be imported into all major analytics software suits.
+  			</p>
+  		</div>
+  		<h1>Benchmark settings:</h1>
+  		<form id="searchForm">
+			<div class="form-group">
+				<label for="testRuns">Number of test runs</label>
+				<input type="text" class="form-control" id="testRuns" name="testRuns" placeholder="Enter number of test runs">
+			</div>
+			<div class="form-group">
+				<label for="slaveFiles">Number of files handled by slaves</label>
+				<input type="text" class="form-control" id="slaveFiles" name="slaveFiles" placeholder="Enter numbr of files handled by slave">
+			</div>
+			<div class="form-group">
+				<button type="submit" class="btn btn-default">Search!</button>
+			</div>
+		</form>
+		
+		<div id="alert" class="alert alert-info">
+			<strong>Please enter a search query!</strong>
+			To do so, type in the search terms and click on the Search button.
+		</div>
+  	</div>
+
+</body>
+</html>
+
