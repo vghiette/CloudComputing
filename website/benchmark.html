@@ -12,6 +12,7 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	
 	<!-- Bootstrap -->
 	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
@@ -19,6 +20,9 @@
 	<script type="text/javascript">
 	
 		var reqRemaining = 0;
+	
+		// Load google shit
+		google.load("visualization", "1", {packages:["corechart"]});
 	
 		$(document).ready(loadFunctions);
 				
@@ -116,13 +120,16 @@
 		{
 			var csvString = '"Request Number","Departure time (ms)", "Arrival Time (ms)", "Request duration (ms)"\n'
 			
+			var t = [];			
 			for(var  i = 0; i < d.length; i++)
 			{
-				var time = a[i] - d[i];
-				csvString += i + "," + d[i] + "," + a[i] + "," + (a[i] - d[i]) + "\n";
+				t[i] = a[i] - d[i];
+				csvString += i + "," + d[i] + "," + a[i] + "," + t[i] + "\n";
 			}
 			
 			offerDownload(csvString);
+			
+			drawChart(t);
 		}
 
 		function offerDownload(csv)
@@ -169,6 +176,27 @@
 			$("#alert").effect( "bounce", "slow" );
 		}
 		
+		function drawChart(times) {
+			
+			var dataArray = [];
+			dataArray[0] = ['Request #', 'Request Time (ms)'];
+			
+			for (var i = 0; i < times.length; i++)
+			{
+				dataArray[i + 1] = [i + 1, times[i]]
+			}			
+			
+	        var data = google.visualization.arrayToDataTable(dataArray);
+	
+	        var options = {
+	          title: 'Cloud Search Performance'
+	        };
+	
+	        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+	
+	        chart.draw(data, options);
+      }
+		
 	</script>
 	
 </head>
@@ -206,6 +234,7 @@
 			<strong>Please enter a search query!</strong>
 			To do so, type in the search terms and click on the Search button.
 		</div>
+		<div id="chart_div"></div>
   	</div>
 
 </body>
