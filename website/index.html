@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	    <meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+	    <title>Article Searcher</title>
+		
+		<!-- Minfied jquery from google -->
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+		<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+		
+		<!-- Bootstrap -->
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+		
+	    <script type="text/javascript">
+			//Put the javascript here
+	
+			$(document).ready(loadFunctions);
+			
+			function loadFunctions()
+			{
+				// callback handler for form submit
+				$("#searchForm").submit(submitForm);
+			}
+			
+			function submitForm(e)
+			{
+				e.preventDefault(); //STOP default action
+			    //e.unbind(); //unbind. to stop multiple form submit.
+				
+				var postData = $(this).serializeArray();
+			    var formURL = "http://localhost:4567/";
+			    
+			    // Chek that the numbr of docs per slave is defined
+			    if(postData[3].value == "")
+			    {
+			    	// Clear previous results
+			        clearResultsTable();
+			        //Alert the user on his mistake
+					changeAlert("No slave number", "Please enter the number of documents each slave needs to process.", "warning");
+					return;
+			    }			    
+			    	
+				// Check that at least one of the form fields is filled in
+				if(postData[1].value == "" && postData[0].value == "" && postData[2].value == "")
+				{
+					// Clear previous results
+			        clearResultsTable();
+			        //Alert the user on his mistake
+					changeAlert("No search terms", "Please enter at least on search term.", "warning");
+					return;
+				}
+			
+			    $.ajax(
+			    {
+			        url : formURL,
+			        type: "POST",
+			        data : postData,
+			        dataType: "json",
+			        success:function(data, textStatus, jqXHR)
+			        {			
+			        	// Clear previous results
+			        	clearResultsTable();
+			        		        	
+			            // Loop through responces and fill the table
+			            for(var i = 0; i < data.length; i++)
+			            {
+			            	var textPath = data[i].path;
+			            	var textText = data[i].text.replace(/\n/g, "<br />");
+			            	var textTitle = data[i].title;
+			            	var analyzed = data[i].analyzed;
+			            	var personNames = data[i].names;
+			            	var locationNames = data[i].locations;
+			           		var organisationNames = data[i].organisations;
+			           		var totalOccurrences = data[i].totalOccurrences;
+			            	
+			            	addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames, totalOccurrences);
+			            }
+			            
+			            $('#resultsTable > tbody:last tr').click(showArticle);
+			            
+			            // Alert the user the search result is in
+			            changeAlert("Search completed!", "The search results are shown in the table.", "success")
+			        },
+			        error: function(jqXHR, textStatus, errorThrown)
+			        {
+			            //if fails     
+			            changeAlert("Error!", "Something whent wrong try again later.", "error");
+			        }
+			    });
+			}
+			
+			function addResultsRow(textTitle, textText, analyzed, personNames, locationNames, organisationNames, totalOccurrences)
+			{
+				// Add the text Path to the table
+            	var tableRow = "<tr><td class='textTitle'>" + textTitle + "</td>";
+            	
+            	// Add the number of person occurences to the table
+            	tableRow += "<td>";
+            	if(typeof personNames !== 'undefined')
+            	{
+	            	for(var j = 0; j < personNames.length; j++)
+	            	{
+	            		tableRow += "<div><span class='name'>" + toTitleCase(personNames[j].name) + "</span><span class='occurrences' style='margin-left:10px;'>" + personNames[j].occurrences + "</span></div>";
+	            	}
+            	}
+            	tableRow += "</td>";
+            	
+            	// Add Locations
+            	tableRow += "<td>";
+            	if(typeof locationNames !== 'undefined')
+            	{
+	            	for(var j = 0; j < locationNames.length; j++)
+	            	{
+	            		tableRow += "<div><span class='name'>" + toTitleCase(locationNames[j].name) + "</span><span class='occurrences' style='margin-left:10px;'>" + locationNames[j].occurrences + "</span></div>";
+	            	}
+            	}
+            	tableRow += "</td>";
+            	
+            	// Add companies
+            	tableRow += "<td>";
+            	if(typeof organisationNames !== 'undefined')
+            	{
+	            	for(var j = 0; j < organisationNames.length; j++)
+	            	{
+	            		tableRow += "<div><span class='name'>" + toTitleCase(organisationNames[j].name) + "</span><span class='occurrences' style='margin-left:10px;'>" + organisationNames[j].occurrences + "</span></div>";
+	            	}
+            	}
+            	tableRow += "</td>";
+            	
+            	//Add the total number of real matches
+            	tableRow += "<td>" + totalOccurrences + "</td>";
+            	
+            	// Add hidden text fo the article
+            	tableRow += "<td class='hiddenText' style='display:none;'>" + textText + "</td></tr>";
+
+            	$('#resultsTable > tbody:last').append(tableRow);
+			}
+			
+			function toTitleCase(str)
+			{
+			    return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+			}
+			
+			function clearResultsTable()
+			{
+				var test = $('#resultsTable tbody');
+				test[0].innerHTML = "";
+			}
+			
+			function changeAlert(strong, text, type)
+			{
+				if(type == "error")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-danger");
+				}
+				else if(type == "warning")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-warning");
+				}
+				else if(type == "success")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-success");
+				}
+				else if(type == "info")
+				{
+					$("#alert").removeClass();
+					$("#alert").addClass("alert alert-info");
+				}
+				
+				
+				$("#alert").html("<strong>" + strong +"</strong> " + text);
+				$("#alert").effect( "bounce", "slow" );
+			}
+			
+			function showArticle(){
+				var text = $('.hiddenText', $(this)).html();
+				var title = $('.textTitle', $(this)).html();
+				var dia = $(document.createElement("div"));
+				dia.html(text);
+				dia.attr("title", title);
+				dia.dialog({height:600, width: 900});
+			}
+			
+		</script>
+	</head>
+  
+  <body>    
+  	<div class="container">
+  		<div class="jumbotron">
+  			<h1>Article searcher</h1>
+  			<p>This website allows you to search through artiles from the CNN news article database.</p>
+  			<p>The application is powered by a cloud so it has infinite possibilities.</p>
+  		</div>
+  		<h1>Search for aticles:</h1>
+  		<form id="searchForm">
+			<div class="form-group">
+				<label for="nameInput">Person name</label>
+				<input type="text" class="form-control" id="nameInput" name="nameInput" placeholder="Enter person name">
+			</div>
+			<div class="form-group">
+				<label for="locationInput">Location name</label>
+				<input type="text" class="form-control" id="locationInput" name="locationInput" placeholder="Enter location name">
+			</div>
+			<div class="form-group">
+				<label for="companyInput">Company name</label>
+				<input type="text" class="form-control" id="organisationInput" name="organisationInput" placeholder="Enter organisation name">
+			</div>
+			<div class="form-group">
+				<label for="slaveInput">Number of documents per slave</label>
+				<input type="text" class="form-control" id="slaveInput" name="slaveInput" placeholder="Enter a number">
+			</div>
+			<div class="form-group">
+				<button type="submit" class="btn btn-default">Search!</button>
+			</div>
+		</form>
+		
+		<div id="alert" class="alert alert-info">
+			<strong>Please enter a search query!</strong>
+			To do so, type in the search terms and click on the Search button.
+		</div>
+		
+		<h1>Results table:</h1>
+		<table id="resultsTable" class="table table-hover">
+			<thead>
+				<tr>
+					<td>Article Name</td>
+					<td>Person hits</td>
+					<td>Location hits</td>
+					<td>Organisation hits</td>
+					<td>Total relevant Hits</td>
+					<td style="display:none;">Text</td>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>  	
+  	</div>
+  </body>
+</html>
