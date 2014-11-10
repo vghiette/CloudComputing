@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
 
-  "Description": "TomTom Apollo VPC with 2 sub-nets, ELB.",
+  "Description": "Architecture for CloudComputing project.",
 
   "Parameters": {
     "SSHKEYNAME": {
@@ -15,53 +15,60 @@
       "Default": "2"
     },
     "NUMSPLITTERS": {
-      "Description": "Number of Worker instances used.",
+      "Description": "Number of Splitters instances used.",
       "Type": "Number",
       "Default": "2"
     },
     "WORKERINSTANCETYPE": {
-      "Description": "Worker instance type needed to be used according to the type of map",
+      "Description": "Worker instance type needed to be used",
       "Type": "String",
       "Default": "t2.micro",
       "AllowedValues": [ "t2.micro","m1.small","m1.medium","m1.large" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
      "SPLITTERINSTANCETYPE": {
-      "Description": "Worker instance type needed to be used according to the type of map",
+      "Description": "Splitter instance type needed to be used",
       "Type": "String",
       "Default": "t2.micro",
       "AllowedValues": [ "t2.micro","m1.small","m1.medium","m1.large" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
       "BASTIONINSTANCETYPE": {
-      "Description": "Master instance type needed to be used according to the type of map",
+      "Description": "Bastion instance type needed to be used",
       "Type": "String",
-      "Default": "t1.micro",
-      "AllowedValues": [ "t1.micro" ],
+      "Default": "t2.micro",
+      "AllowedValues": [ "t2.micro" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
       "WEBCLIENTINSTANCETYPE": {
-      "Description": "WebClient instance type needed to be used according to the type of map",
+      "Description": "WebClient instance type needed to be used",
       "Type": "String",
-      "Default": "t1.micro",
-      "AllowedValues": [ "t1.micro" ],
+      "Default": "t2.micro",
+      "AllowedValues": [ "t2.micro" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
     "ALLOWADMINSFROM": {
-      "Description": "An IP address range that is allowed to both SSH to and make HTTP requests to the EC2 instances (defaults to the Amsterdam TT office IP range)",
+      "Description": "An IP address range that is allowed to both SSH to and make HTTP requests to the EC2 instances",
       "Type": "String",
       "MinLength": "9",
       "MaxLength": "18",
-      "Default": "85.90.76.130/32",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
     },
     "ALLOWADMINSFROM2": {
-      "Description": "An IP address range that is allowed to both SSH to and make HTTP requests to the EC2 instances (defaults to the Amsterdam TT office IP range)",
+      "Description": "An IP address range that is allowed to both SSH to and make HTTP requests to the EC2 instances",
       "Type": "String",
       "MinLength": "9",
       "MaxLength": "18",
-      "Default": "85.90.76.97/32",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+	"ALLOWVIEWERSFROM": {
+      "Description": "An IP address range that is allowed to make HTTP requests to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+	  "Default" : "0.0.0.0/0",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
     }
@@ -70,16 +77,13 @@
   "Mappings": {
     "DefaultAMIs": {
       "SPLITTERAMI" : {
-        "dev"   : "ami-6e7bd919",
-	"prod"  : "ami-6e7bd919"
+        "dev"   : "ami-e443f693"
       },
       "WORKERAMI" : {
-        "dev"   : "ami-6e7bd919",
-	"prod"  : "ami-6e7bd919"
+        "dev"   : "ami-e443f693"
       },
       "WEBCLIENTAMI" : {
-        "dev"   : "ami-6e7bd919",
-        "prod"  : "ami-6e7bd919"
+        "dev"   : "ami-e443f693"
       }
     }
   },
@@ -113,11 +117,25 @@
        "DependsOn": "InternetGateway"
     },
 
-    "PublicSubnet": {
+    "PublicSubnet1": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
+        "AvailabilityZone" : "eu-west-1a",
         "VpcId": { "Ref": "VPC" },
         "CidrBlock": "10.0.0.0/24",
+        "Tags": [
+          {"Key": "Network", "Value": "Public" }
+        ]
+      },
+      "DependsOn": "AttachGateway"
+    },
+
+    "PublicSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone" : "eu-west-1b",
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": "10.0.3.0/24",
         "Tags": [
           {"Key": "Network", "Value": "Public" }
         ]
@@ -134,7 +152,7 @@
         ]
       }
     },
-    
+
     "PublicRouteInternetAccessViaGateway": {
       "Type": "AWS::EC2::Route",
       "Properties": {
@@ -144,10 +162,18 @@
       }
     },
 
-    "PublicSubnetRouteTableAssociation": {
+    "PublicSubnetRouteTableAssociation1": {
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
-        "SubnetId": { "Ref": "PublicSubnet" },
+        "SubnetId": { "Ref": "PublicSubnet1" },
+        "RouteTableId": { "Ref": "PublicRouteTable" }
+      }
+    },
+
+    "PublicSubnetRouteTableAssociation2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PublicSubnet2" },
         "RouteTableId": { "Ref": "PublicRouteTable" }
       }
     },
@@ -198,6 +224,19 @@
         "Egress": "false",
         "CidrBlock": { "Ref": "ALLOWADMINSFROM" },
         "PortRange": {"From": "443", "To": "443"}
+      }
+    },
+	
+	"InboundHTTPPort80ForViewersPublicNetworkAclEntry": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "120",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "false",
+        "CidrBlock": { "Ref": "ALLOWVIEWERSFROM" },
+        "PortRange": {"From": "80", "To": "80"}
       }
     },
 
@@ -253,12 +292,77 @@
         "PortRange": {"From": "22", "To": "22"}
       }
     },
+	
+	"InBoundRequestsFromPrivateSubnetPublicNetworkAclEntry1": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "800",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "false",
+        "CidrBlock": "10.0.1.0/24",
+        "PortRange": {"From": "1", "To": "65535"}
+      }
+    },
+
+    "InBoundRequestsFromPrivateSubnetPublicNetworkAclEntry2": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "850",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "false",
+        "CidrBlock": "10.0.2.0/24",
+        "PortRange": {"From": "1", "To": "65535"}
+      }
+    },
+
+    "InBoundSSHResponsesFromNATToBastionInPublicNetwork1AclEntry": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "910",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "false",
+        "CidrBlock": "10.0.0.0/24",
+        "PortRange": {"From": "22", "To": "22"}
+      }
+    },
+
+    "InBoundSSHConnectionFromBastionToNATInPublicNetwork2AclEntry": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "920",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "false",
+        "CidrBlock": "10.0.3.0/24",
+        "PortRange": {"From": "1024", "To": "65535"}
+      }
+    },
+
+    "OutBoundSSHConnectionFromBastionToNATInPublicNetwork2AclEntry": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "930",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "true",
+        "CidrBlock": "10.0.3.0/24",
+        "PortRange": {"From": "22", "To": "22"}
+      }
+    },
 
     "OutBoundDynamicPortPublicNetworkAclEntry": {
       "Type": "AWS::EC2::NetworkAclEntry",
       "Properties": {
         "NetworkAclId": {"Ref": "PublicNetworkAcl"},
-        "RuleNumber": "500",
+        "RuleNumber": "100",
         "Protocol": "6",
         "RuleAction": "allow",
         "Egress": "true",
@@ -267,20 +371,50 @@
       }
     },
 
-
-    "PublicSubnetNetworkAclAssociation": {
-      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+    "OutBoundSSHToPrivateSubnetPublicNetworkAclEntry1": {
+      "Type": "AWS::EC2::NetworkAclEntry",
       "Properties": {
-        "SubnetId": { "Ref": "PublicSubnet" },
-        "NetworkAclId": { "Ref": "PublicNetworkAcl" }
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "200",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "true",
+        "CidrBlock": "10.0.1.0/24",
+        "PortRange": {"From": "22", "To": "22"}
       }
     },
 
-     "PrivateSubnet": {
+    "OutBoundSSHToPrivateSubnetPublicNetworkAclEntry2": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {"Ref": "PublicNetworkAcl"},
+        "RuleNumber": "250",
+        "Protocol": "6",
+        "RuleAction": "allow",
+        "Egress": "true",
+        "CidrBlock": "10.0.2.0/24",
+        "PortRange": {"From": "22", "To": "22"}
+      }
+    },
+
+     "PrivateSubnet1": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
+        "AvailabilityZone" : "eu-west-1a",
         "VpcId": { "Ref": "VPC" },
         "CidrBlock": "10.0.1.0/24",
+        "Tags": [
+          {"Key": "Network", "Value": "Private" }
+        ]
+      }
+    },
+
+    "PrivateSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone" : "eu-west-1b",
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": "10.0.2.0/24",
         "Tags": [
           {"Key": "Network", "Value": "Private" }
         ]
@@ -297,10 +431,18 @@
       }
     },
 
-    "PrivateSubnetRouteTableAssociation": {
+    "PrivateSubnetRouteTableAssociation1": {
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
-        "SubnetId": { "Ref": "PrivateSubnet" },
+        "SubnetId": { "Ref": "PrivateSubnet1" },
+        "RouteTableId": { "Ref": "PrivateRouteTable" }
+      }
+    },
+
+    "PrivateSubnetRouteTableAssociation2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnet2" },
         "RouteTableId": { "Ref": "PrivateRouteTable" }
       }
     },
@@ -341,10 +483,18 @@
       }
     },
 
-    "PrivateSubnetNetworkAclAssociation": {
+    "PrivateSubnetNetworkAclAssociation1": {
       "Type": "AWS::EC2::SubnetNetworkAclAssociation",
       "Properties": {
-        "SubnetId": { "Ref": "PrivateSubnet" },
+        "SubnetId": { "Ref": "PrivateSubnet1" },
+        "NetworkAclId": { "Ref": "PrivateNetworkAcl" }
+      }
+    },
+
+    "PrivateSubnetNetworkAclAssociation2": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnet2" },
         "NetworkAclId": { "Ref": "PrivateNetworkAcl" }
       }
     },
@@ -379,7 +529,8 @@
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
       "Properties": {
         "SecurityGroups": [ { "Ref": "SplitterLoadBalancerSecurityGroup" } ],
-        "Subnets":  [{"Ref" : "PublicSubnet"}],
+        "Subnets": [{"Ref" : "PublicSubnet1"},{"Ref" :"PublicSubnet2"}],
+		"CrossZone": "true",
         "Listeners": [ { "LoadBalancerPort": "8080", "InstancePort": "8080", "Protocol": "HTTP" } ],
         "HealthCheck": {
           "Target": "HTTP:8080/",
@@ -397,7 +548,8 @@
         "GroupDescription": "Enable HTTP access on port 80, and HTTPS access on port 443",
         "VpcId": { "Ref": "VPC" },
         "SecurityGroupIngress": [
-          { "IpProtocol": "tcp", "FromPort": "8080", "ToPort": "8080", "SourceSecurityGroupId": { "Ref": "BastionSecurityGroup" } }
+          { "IpProtocol": "tcp", "FromPort": "8080", "ToPort": "8080", "SourceSecurityGroupId": { "Ref": "BastionSecurityGroup" } },
+          { "IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "SourceSecurityGroupId": { "Ref": "BastionSecurityGroup" } }
         ],
         "SecurityGroupEgress": [
           { "IpProtocol": "tcp", "FromPort": "8080", "ToPort": "8080", "CidrIp" : "0.0.0.0/0" }
@@ -408,8 +560,8 @@
    "SplitterGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
-        "AvailabilityZones": [{ "Fn::GetAtt": [ "PrivateSubnet", "AvailabilityZone" ] }],
-        "VPCZoneIdentifier": [{ "Ref": "PrivateSubnet" }],
+        "AvailabilityZones" : ["eu-west-1a","eu-west-1b"],
+        "VPCZoneIdentifier": [{"Ref" : "PrivateSubnet1"},{"Ref" :"PrivateSubnet2"}],
         "LaunchConfigurationName": { "Ref": "SplitterLaunchConfig" },
         "MinSize": { "Ref": "NUMSPLITTERS" },
         "MaxSize": { "Ref": "NUMSPLITTERS" },
@@ -425,13 +577,26 @@
 
     "SplitterLaunchConfig": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
+	  "Metadata" : {
+      "AWS::CloudFormation::Init" : {
+        "config" : {
+		   "/home/ec-user/code.txt" : {
+		     "source" : "https://s3-eu-west-1.amazonaws.com/code-cloud-computing/code.txt",
+			 "mode" : "000400",
+			 "owner":"ec2-user",
+			 "group":"ec2-user"
+		   }
+		}}},
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "DefaultAMIs", "SPLITTERAMI", "dev" ] },
         "SecurityGroups": [ { "Ref": "SplitterSecurityGroup" } ],
         "InstanceType": { "Ref": "SPLITTERINSTANCETYPE" },
         "KeyName": { "Ref": "SSHKEYNAME" },
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
-          "cd /home/ubuntu/", "\n"
+          "#!/bin/bash -ex","\n",
+          "export AWS_ACCESS_KEY=[ACCESS_KEY]", "\n",
+		  "export AWS_ACCESS_SECRET_KEY=[SECRET_KEY]", "\n",
+		  "java -jar cloudSearch.jar master $AWS_ACCESS_KEY $AWS_ACCESS_SECRET_KEY s3.eu-central-1.amazonaws.com 8080 0.0.0.0/0", "\n"
         ]]}}
       }
     },
@@ -452,7 +617,8 @@
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
       "Properties": {
         "SecurityGroups": [ { "Ref": "WorkerLoadBalancerSecurityGroup" } ],
-        "Subnets":  [{"Ref" : "PrivateSubnet"}],
+        "Subnets": [{"Ref" : "PublicSubnet1"},{"Ref" :"PublicSubnet2"}],
+		"CrossZone": "true",
         "Listeners": [ { "LoadBalancerPort": "8080", "InstancePort": "8080", "Protocol": "HTTP" } ],
         "Scheme" : "internal",
         "HealthCheck": {
@@ -483,15 +649,15 @@
     "WorkerGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
-        "AvailabilityZones": [{ "Fn::GetAtt": [ "PrivateSubnet", "AvailabilityZone" ] }],
-        "VPCZoneIdentifier": [{ "Ref": "PrivateSubnet" }],
+        "AvailabilityZones" : ["eu-west-1a","eu-west-1b"],
+        "VPCZoneIdentifier": [{"Ref" : "PrivateSubnet1"},{"Ref" :"PrivateSubnet2"}],
         "LaunchConfigurationName": { "Ref": "WorkerLaunchConfig" },
         "MinSize": { "Ref": "NUMWORKERS" },
         "MaxSize": { "Ref": "NUMWORKERS" },
         "DesiredCapacity": { "Ref": "NUMWORKERS" },
         "LoadBalancerNames": [ { "Ref": "WorkerLoadBalancer" } ],
         "Tags": [
-          {"Key": "Name", "Value": "Apollo", "PropagateAtLaunch": "true" },
+          {"Key": "Name", "Value": "Worker", "PropagateAtLaunch": "true" },
           {"Key": "Network", "Value": "Private", "PropagateAtLaunch": "true" },
           {"Key": "Role", "Value": "Worker" , "PropagateAtLaunch": "true" }
         ]
@@ -500,13 +666,27 @@
 
     "WorkerLaunchConfig": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
+	  "Metadata" : {
+      "AWS::CloudFormation::Init" : {
+        "config" : {
+		    "files":{
+		   "/home/ec-user/code.txt" : {
+		     "source" : "https://s3-eu-west-1.amazonaws.com/code-cloud-computing/code.txt",
+			 "mode" : "000400",
+			 "owner":"root",
+			 "group":"root"
+		   }
+		}}}},
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "DefaultAMIs", "WORKERAMI", "dev" ] },
         "SecurityGroups": [ { "Ref": "WorkerSecurityGroup" } ],
         "InstanceType": { "Ref": "WORKERINSTANCETYPE" },
         "KeyName": { "Ref": "SSHKEYNAME" },
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
-          "cd /home/ubuntu/", "\n"
+          "#!/bin/bash -ex","\n",
+          "export AWS_ACCESS_KEY=[ACCESS_KEY]", "\n",
+		  "export AWS_ACCESS_SECRET_KEY=[SECRET_KEY]", "\n",
+		  "java -jar cloudSearch.jar slave $AWS_ACCESS_KEY $AWS_ACCESS_SECRET_KEY s3.eu-central-1.amazonaws.com 8080 0.0.0.0/0", "\n"
         ]]}}
       }
     },
@@ -528,7 +708,7 @@
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "DefaultAMIs", "WORKERAMI", "dev" ] },
         "SecurityGroupIds": [{ "Ref": "BastionSecurityGroup" }],
-        "SubnetId": { "Ref": "PrivateSubnet" },
+        "SubnetId": { "Ref": "PublicSubnet1" },
 		"KeyName": { "Ref": "SSHKEYNAME" },
         "InstanceType": { "Ref" : "WORKERINSTANCETYPE" },
         "Tags": [
@@ -565,11 +745,22 @@
 	
       "WebClient": {
       "Type": "AWS::EC2::Instance",
+	  "Metadata" : {
+      "AWS::CloudFormation::Init" : {
+        "config" : {
+		   "files":{
+		   "/home/ec2-user/code.txt" : {
+		     "source" : "https://s3-eu-west-1.amazonaws.com/code-cloud-computing/code.txt",
+			 "mode" : "000400",
+			 "owner":"ec2-user",
+			 "group":"ec2-user"
+		   }
+		}}}},
       "Properties": {
-        "ImageId": "ami-5256b825",
+        "ImageId": "ami-e443f693",
         "SecurityGroupIds": [{ "Ref": "WebClientSecurityGroup" }],
-        "SubnetId": { "Ref": "PublicSubnet" },
-	"KeyName": { "Ref": "SSHKEYNAME" },
+        "SubnetId": { "Ref": "PublicSubnet1" },
+	    "KeyName": { "Ref": "SSHKEYNAME" },
         "InstanceType": { "Ref" : "WEBCLIENTINSTANCETYPE" },
         "Tags": [
           {"Key": "Name", "Value": "WebClient" },
@@ -578,7 +769,9 @@
         ],
         "UserData": {"Fn::Base64": {"Fn::Join": ["", [
           "#!/bin/bash -ex","\n",
-          "\n"
+          "export AWS_ACCESS_KEY=[ACCESS_KEY]", "\n",
+		  "export AWS_ACCESS_SECRET_KEY=[SECRET_KEY]", "\n",
+		  "java -jar cloudSearch.jar slave $AWS_ACCESS_KEY $AWS_ACCESS_SECRET_KEY s3.eu-central-1.amazonaws.com 8080 0.0.0.0/0", "\n"
         ]]}}
       }
     },
@@ -590,7 +783,9 @@
         "GroupDescription": "Enable SSH access via port 22",
         "SecurityGroupIngress": [
           {"IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "CidrIp": { "Ref": "ALLOWADMINSFROM" }},
-          {"IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "CidrIp": { "Ref": "ALLOWADMINSFROM2" }}
+          {"IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "CidrIp": { "Ref": "ALLOWADMINSFROM2" }},
+		  {"IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "CidrIp": { "Ref": "ALLOWVIEWERSFROM" }},
+		  { "IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "SourceSecurityGroupId": { "Ref": "BastionSecurityGroup" } }
         ]
       }
     },
@@ -601,6 +796,100 @@
         "Domain" : "vpc",
         "InstanceId" : { "Ref" : "WebClient" }
       }
+    },
+	
+	"PrivateRouteInternetAccessViaNAT": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": { "Ref": "PrivateRouteTable" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "InstanceId": { "Ref": "NATInstance" }
+      }
+    },
+
+    "NATEIP" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "Domain" : "vpc",
+        "InstanceId" : { "Ref" : "NATInstance" }
+      }
+    },
+	
+	"NATInstance" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "InstanceType" : "t2.micro" ,
+        "KeyName" : { "Ref" : "SSHKEYNAME" },
+        "SubnetId" : { "Ref" : "PublicSubnet1" },
+        "SourceDestCheck" : "false",
+        "ImageId" : "ami-14913f63",
+        "SecurityGroupIds" : [{ "Ref" : "NATSecurityGroup" }],
+        "Tags" : [
+          { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ "NAT #1", { "Ref": "AWS::StackName" } ] ] } },
+          { "Key" : "Network", "Value": "Public" },
+          { "Key" : "Role", "Value": "NAT" }
+        ],
+        "UserData"       : { "Fn::Base64" : { "Fn::Join" : ["", [
+          "#!/bin/bash -v\n",
+          "yum update -y aws*\n",
+          ". /etc/profile.d/aws-apitools-common.sh\n",
+          "# Configure iptables\n",
+          "/sbin/iptables -t nat -A POSTROUTING -o eth0 -s 0.0.0.0/0 -j MASQUERADE\n",
+          "/sbin/iptables-save > /etc/sysconfig/iptables\n",
+          "# Configure ip forwarding and redirects\n",
+          "echo 1 >  /proc/sys/net/ipv4/ip_forward && echo 0 >  /proc/sys/net/ipv4/conf/eth0/send_redirects\n",
+          "mkdir -p /etc/sysctl.d/\n",
+          "cat <<EOF > /etc/sysctl.d/nat.conf\n",
+          "net.ipv4.ip_forward = 1\n",
+          "net.ipv4.conf.eth0.send_redirects = 0\n",
+          "EOF\n",
+          "sleep 180\n",
+          "NAT_ID=\n",
+          "# CloudFormation should have updated the PrivateRouteTable by now (due to yum update), however loop to make sure\n",
+          "while [ \"$NAT_ID\" == \"\" ]; do\n",
+          "  sleep 60\n",
+          "  NAT_ID=`/opt/aws/bin/ec2-describe-route-tables ", { "Ref" : "PrivateRouteTable" },
+          " -U https://ec2.", { "Ref" : "AWS::Region" }, ".amazonaws.com | grep 0.0.0.0/0 | awk '{print $2;}'`\n",
+          "  #echo `date` \"-- NAT_ID=$NAT_ID\" >> /tmp/test.log\n",
+          "done\n"
+        ]]}}
+      }
+    },
+	
+	"NATSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Rules for allowing access to HA Nodes",
+        "VpcId" : { "Ref" : "VPC" },
+        "SecurityGroupIngress": [
+          {"IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "SourceSecurityGroupId": { "Ref": "BastionSecurityGroup" }},
+          {"IpProtocol": "tcp", "FromPort": "80", "ToPort": "80", "SourceSecurityGroupId": { "Ref": "WorkerSecurityGroup" }},
+          {"IpProtocol": "tcp", "FromPort": "443", "ToPort": "443", "SourceSecurityGroupId": { "Ref": "WorkerSecurityGroup" }},
+          {"IpProtocol": "tcp", "FromPort": "80", "ToPort": "80", "SourceSecurityGroupId": { "Ref": "SplitterSecurityGroup" }},
+          {"IpProtocol": "tcp", "FromPort": "8080", "ToPort": "8080", "SourceSecurityGroupId": { "Ref": "SplitterSecurityGroup" }},
+          {"IpProtocol": "tcp", "FromPort": "443", "ToPort": "443", "SourceSecurityGroupId": { "Ref": "SplitterSecurityGroup" }}
+         ]
+      }
+    },
+	
+	"AlertsStack": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3-eu-west-1.amazonaws.com/code-cloud-computing/vpc-alerts.json",
+        "TimeoutInMinutes": "10",
+        "Parameters": {
+          "WORKERLOADBALANCER": {"Ref": "WorkerLoadBalancer"},
+          "WORKERGROUP": {"Ref": "WorkerGroup"},
+          "SPLITTERLOADBALANCER": {"Ref": "SplitterLoadBalancer"},
+          "SPLITTERGROUP": {"Ref": "SplitterGroup"},
+          "BASTION": {"Ref": "Bastion"},
+          "WEBCLIENT": {"Ref": "WebClient"},
+		  "ScalingUpAdjustment": "200",
+		  "ScalingDownAdjustment": "30",
+		  "ScaleUpCooldown": "420",
+		  "ScaleDownCooldown": "120"
+        }
+      }
     }
   },
 
@@ -610,7 +899,7 @@
       "Value": { "Fn::Join": [ "", [ "http://", { "Fn::GetAtt": [ "WorkerLoadBalancer", "DNSName" ] }, "/"] ] }
     },
     "SplitterLoadBalancerHostName": {
-      "Value": { "Fn::GetAtt": [ "WorkerLoadBalancer", "DNSName" ] }
+      "Value": { "Fn::GetAtt": [ "SplitterLoadBalancer", "DNSName" ] }
     },
     "WebClientPublicIPAddress" : {
 	  "Value": { "Ref" : "WebClientPublicIPAddress" }

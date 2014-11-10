@@ -1,0 +1,370 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description": "Configure alerts based on the health check of the Worker and SPLITTER load balancers, number of back-end application instances and the status check of the Worker, SPLITTER, WEBClient, Bastion.",
+
+  "Parameters": {
+    "WORKERLOADBALANCER" : {
+      "Type": "String"
+    },
+    "WORKERGROUP" : {
+      "Type": "String"
+    },
+    "SPLITTERLOADBALANCER" : {
+      "Type": "String"
+    },
+    "SPLITTERGROUP" : {
+      "Type": "String"
+    },
+    "BASTION" : {
+      "Type": "String"
+    },
+    "WEBCLIENT" : {
+      "Type": "String"
+    },
+    "EVALUATIONPERIODSECONDS": {
+      "Type": "Number",
+      "Default": "300",
+      "Description": "The number of seconds between two adjacent checks of a metric value against a threshold."
+    },
+    "NUMEVALUATIONPERIODS": {
+      "Type": "Number",
+      "Default": "4",
+      "Description": "The number of contiguous evaluation periods during which an instance status check must fail before an alarm is raised."
+    },
+    "ScalingUpAdjustment":{
+            "Description":"Scaling up group size percentage adjustment",
+            "Type":"Number",
+            "Default":"200"
+    },
+    "ScalingDownAdjustment":{
+            "Description":"Scaling down group size percentage adjustment",
+            "Type":"Number",
+            "Default":"30"
+    },
+    "ScaleUpCooldown":{
+            "Description":"A period of time from triggering an auto scaling scale up activity during which no other auto scaling activity can take place (in seconds)",
+            "Type":"Number",
+            "Default":"420"
+    },
+    "ScaleDownCooldown":{
+            "Description":"A period of time from triggering an auto scaling scale down activity during which no other auto scaling activity can take place (in seconds)",
+            "Type":"Number",
+            "Default":"120"
+    }
+  },
+
+  "Resources": {
+    "NotificationTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "Subscription": [ {
+          "Endpoint": "rux.ciaramella@gmail.com",
+          "Protocol": "email"
+        } ]
+      }
+    },
+
+    "WorkerUnhealthyHostCountAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "At least one Worker instance is unhealthy according to the Worker load balancer.",
+        "Namespace": "AWS/ELB",
+        "MetricName": "UnHealthyHostCount",
+        "Dimensions": [ {
+          "Name": "LoadBalancerName",
+          "Value" : { "Ref": "WORKERLOADBALANCER" }
+        } ],
+        "Statistic": "Maximum",
+        "Period": { "Ref": "EVALUATIONPERIODSECONDS" },
+        "EvaluationPeriods": "1",
+        "Threshold": "1",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [ { "Ref": "NotificationTopic" } ]
+      }
+    },
+
+    "WorkerStatusCheckFailedAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "At least one Worker instance is failing an AWS 'status check'.",
+        "Namespace": "AWS/EC2",
+        "MetricName": "StatusCheckFailed",
+        "Dimensions": [ {
+          "Name": "AutoScalingGroupName",
+          "Value" : { "Ref": "WORKERGROUP" }
+        } ],
+        "Statistic": "Maximum",
+        "Period": { "Ref": "EVALUATIONPERIODSECONDS" },
+        "EvaluationPeriods": { "Ref": "NUMEVALUATIONPERIODS" },
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [ { "Ref": "NotificationTopic" } ],
+        "InsufficientDataActions": [ { "Ref": "NotificationTopic" } ]
+      }
+    },
+
+    "SPLITTERServiceUnhealthyHostCountAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "At least one SPLITTER Service instance is unhealthy according to the load balancer.",
+        "Namespace": "AWS/ELB",
+        "MetricName": "UnHealthyHostCount",
+        "Dimensions": [ {
+          "Name": "LoadBalancerName",
+          "Value" : { "Ref": "SPLITTERLOADBALANCER" }
+        } ],
+        "Statistic": "Maximum",
+        "Period": { "Ref": "EVALUATIONPERIODSECONDS" },
+        "EvaluationPeriods": "1",
+        "Threshold": "1",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [ { "Ref": "NotificationTopic" } ]
+      }
+    },
+
+    "SPLITTERStatusCheckFailedAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "At least one SPLITTER Service instance is failing an AWS 'status check'.",
+        "Namespace": "AWS/EC2",
+        "MetricName": "StatusCheckFailed",
+        "Dimensions": [ {
+          "Name": "AutoScalingGroupName",
+          "Value" : { "Ref": "SPLITTERGROUP" }
+        } ],
+        "Statistic": "Maximum",
+        "Period": { "Ref": "EVALUATIONPERIODSECONDS" },
+        "EvaluationPeriods": { "Ref": "NUMEVALUATIONPERIODS" },
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [ { "Ref": "NotificationTopic" } ],
+        "InsufficientDataActions": [ { "Ref": "NotificationTopic" } ]
+      }
+    },
+
+    "BastionStatusCheckAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Bastion status check failed.",
+        "Namespace": "AWS/EC2",
+        "MetricName": "StatusCheckFailed",
+        "Dimensions": [ {
+          "Name": "InstanceId",
+          "Value" : { "Ref": "BASTION" }
+        } ],
+        "Statistic": "Maximum",
+        "Period": { "Ref": "EVALUATIONPERIODSECONDS" },
+        "EvaluationPeriods": { "Ref": "NUMEVALUATIONPERIODS" },
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [ { "Ref": "NotificationTopic" } ],
+        "InsufficientDataActions": [ { "Ref": "NotificationTopic" } ]
+      }
+    },
+
+    "WEBClientStatusCheckAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "WEBClient status check failed.",
+        "Namespace": "AWS/EC2",
+        "MetricName": "StatusCheckFailed",
+        "Dimensions": [ {
+          "Name": "InstanceId",
+          "Value" : { "Ref": "WEBCLIENT" }
+        } ],
+        "Statistic": "Maximum",
+        "Period": { "Ref": "EVALUATIONPERIODSECONDS" },
+        "EvaluationPeriods": { "Ref": "NUMEVALUATIONPERIODS" },
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [ { "Ref": "NotificationTopic" } ],
+        "InsufficientDataActions": [ { "Ref": "NotificationTopic" } ]
+      }
+    },
+	
+	"SplitterScaleUpPolicy":{
+            "Type":"AWS::AutoScaling::ScalingPolicy",
+            "Properties":{
+                "AdjustmentType":"PercentChangeInCapacity",
+                "AutoScalingGroupName":{
+                    "Ref":"SPLITTERGROUP"
+                },
+                "Cooldown":{
+                    "Ref":"ScaleUpCooldown"
+                },
+                "ScalingAdjustment":{
+                    "Ref":"ScalingUpAdjustment"
+                }
+            }
+        },
+    "SplitterScaleDownPolicy":{
+            "Type":"AWS::AutoScaling::ScalingPolicy",
+            "Properties":{
+                "AdjustmentType":"PercentChangeInCapacity",
+                "AutoScalingGroupName":{
+                    "Ref":"SPLITTERGROUP"
+                },
+                "Cooldown":{
+                    "Ref":"ScaleDownCooldown"
+                },
+                "ScalingAdjustment":{
+                    "Fn::Join":[
+                        "",
+                        [
+                            "-",
+                            {
+                                "Ref":"ScalingDownAdjustment"
+                            }
+                        ]
+                    ]
+                }
+            }
+        },
+
+        "SplitterCPUAlarmHigh":{
+            "Type":"AWS::CloudWatch::Alarm",
+            "Properties":{
+                "AlarmDescription":"Scale-up if CPU > 55% for 1 minute",
+                "MetricName":"CPUUtilization",
+                "Namespace":"AWS/EC2",
+                "Statistic":"Average",
+                "Period":"60",
+                "EvaluationPeriods":"1",
+                "Threshold":"55",
+                "AlarmActions":[
+                    {
+                        "Ref":"SplitterScaleUpPolicy"
+                    }
+                ],
+                "Dimensions":[
+                    {
+                        "Name":"AutoScalingGroupName",
+                        "Value":{
+                            "Ref":"SPLITTERGROUP"
+                        }
+                    }
+                ],
+                "ComparisonOperator":"GreaterThanThreshold"
+            }
+        },
+        "SplitterCPUAlarmLow":{
+            "Type":"AWS::CloudWatch::Alarm",
+            "Properties":{
+                "AlarmDescription":"Scale-down if CPU < 20% for 30 minutes",
+                "MetricName":"CPUUtilization",
+                "Namespace":"AWS/EC2",
+                "Statistic":"Average",
+                "Period":"60",
+                "EvaluationPeriods":"30",
+                "Threshold":"20",
+                "AlarmActions":[
+                    {
+                        "Ref":"SplitterScaleDownPolicy"
+                    }
+                ],
+                "Dimensions":[
+                    {
+                        "Name":"AutoScalingGroupName",
+                        "Value":{
+                            "Ref":"SPLITTERGROUP"
+                        }
+                    }
+                ],
+                "ComparisonOperator":"LessThanThreshold"
+            }
+        },
+		
+	"WorkerScaleUpPolicy":{
+            "Type":"AWS::AutoScaling::ScalingPolicy",
+            "Properties":{
+                "AdjustmentType":"PercentChangeInCapacity",
+                "AutoScalingGroupName":{
+                    "Ref":"WORKERGROUP"
+                },
+                "Cooldown":{
+                    "Ref":"ScaleUpCooldown"
+                },
+                "ScalingAdjustment":{
+                    "Ref":"ScalingUpAdjustment"
+                }
+            }
+        },
+    "WorkerScaleDownPolicy":{
+            "Type":"AWS::AutoScaling::ScalingPolicy",
+            "Properties":{
+                "AdjustmentType":"PercentChangeInCapacity",
+                "AutoScalingGroupName":{
+                    "Ref":"WORKERGROUP"
+                },
+                "Cooldown":{
+                    "Ref":"ScaleDownCooldown"
+                },
+                "ScalingAdjustment":{
+                    "Fn::Join":[
+                        "",
+                        [
+                            "-",
+                            {
+                                "Ref":"ScalingDownAdjustment"
+                            }
+                        ]
+                    ]
+                }
+            }
+        },
+	
+    "WorkerCPUAlarmHigh":{
+            "Type":"AWS::CloudWatch::Alarm",
+            "Properties":{
+                "AlarmDescription":"Scale-up if CPU > 55% for 1 minute",
+                "MetricName":"CPUUtilization",
+                "Namespace":"AWS/EC2",
+                "Statistic":"Average",
+                "Period":"60",
+                "EvaluationPeriods":"1",
+                "Threshold":"55",
+                "AlarmActions":[
+                    {
+                        "Ref":"WorkerScaleUpPolicy"
+                    }
+                ],
+                "Dimensions":[
+                    {
+                        "Name":"AutoScalingGroupName",
+                        "Value":{
+                            "Ref":"WORKERGROUP"
+                        }
+                    }
+                ],
+                "ComparisonOperator":"GreaterThanThreshold"
+            }
+        },
+    "WorkerCPUAlarmLow":{
+            "Type":"AWS::CloudWatch::Alarm",
+            "Properties":{
+                "AlarmDescription":"Scale-down if CPU < 20% for 30 minutes",
+                "MetricName":"CPUUtilization",
+                "Namespace":"AWS/EC2",
+                "Statistic":"Average",
+                "Period":"60",
+                "EvaluationPeriods":"30",
+                "Threshold":"20",
+                "AlarmActions":[
+                    {
+                        "Ref":"WorkerScaleDownPolicy"
+                    }
+                ],
+                "Dimensions":[
+                    {
+                        "Name":"AutoScalingGroupName",
+                        "Value":{
+                            "Ref":"WORKERGROUP"
+                        }
+                    }
+                ],
+                "ComparisonOperator":"LessThanThreshold"
+            }
+    }
+  }
+}
