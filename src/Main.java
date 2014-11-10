@@ -20,7 +20,7 @@ public class Main {
 		// Check if the number of arguments is correct, if not then print out
 		// the manual.
 
-		if (args[0].equals("master") && args.length == 6) {
+		if (args.length == 6 && args[0].equals("master")) {
 			String accessKey = args[1];
 			String secretKey = args[2];
 			String s3IP = args[3];
@@ -28,7 +28,7 @@ public class Main {
 			String slaveELBIP = args[5];
 			new Master(accessKey, secretKey, s3IP, slaveELBIP, masterPort);
 
-		} else if (args[0].equals("slave") && args.length == 5) {
+		} else if (args.length == 5 && args[0].equals("slave")) {
 			String accessKey = args[1];
 			String secretKey = args[2];
 			String s3IP = args[3];
